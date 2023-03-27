@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+    <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml">
+        <edmx:Include Alias="Capabilities" Namespace="Org.OData.Capabilities.V1"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+        <edmx:Include Alias="Common" Namespace="com.sap.vocabularies.Common.v1"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+        <edmx:Include Alias="Core" Namespace="Org.OData.Core.V1"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
+        <edmx:Include Alias="UI" Namespace="com.sap.vocabularies.UI.v1"/>
+    </edmx:Reference>
+    <edmx:DataServices>
+        <Schema Namespace="main" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+            <EntityContainer Name="EntityContainer">
+                <EntitySet Name="purchaseOrder" EntityType="main.purchaseOrder">
+                    <NavigationPropertyBinding Path="currency" Target="Currencies"/>
+                    <NavigationPropertyBinding Path="SiblingEntity" Target="purchaseOrder"/>
+                </EntitySet>
+                <EntitySet Name="status" EntityType="main.status"/>
+                <EntitySet Name="Currencies" EntityType="main.Currencies">
+                    <NavigationPropertyBinding Path="texts" Target="Currencies_texts"/>
+                    <NavigationPropertyBinding Path="localized" Target="Currencies_texts"/>
+                </EntitySet>
+                <EntitySet Name="Currencies_texts" EntityType="main.Currencies_texts"/>
+                <ActionImport Name="updateApprovalStatus" Action="main.updateApprovalStatus"/>
+            </EntityContainer>
+            <EntityType Name="purchaseOrder">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                    <PropertyRef Name="IsActiveEntity"/>
+                </Key>
+                <Property Name="ID" Type="Edm.Guid" Nullable="false"/>
+                <Property Name="createdAt" Type="Edm.DateTimeOffset" Precision="7"/>
+                <Property Name="createdBy" Type="Edm.String" MaxLength="255"/>
+                <Property Name="modifiedAt" Type="Edm.DateTimeOffset" Precision="7"/>
+                <Property Name="modifiedBy" Type="Edm.String" MaxLength="255"/>
+                <Property Name="poDocumentNumber" Type="Edm.String" MaxLength="10"/>
+                <Property Name="supplier" Type="Edm.String"/>
+                <Property Name="requestedDeliveryDate" Type="Edm.Date"/>
+                <NavigationProperty Name="currency" Type="main.Currencies">
+                    <ReferentialConstraint Property="currency_code" ReferencedProperty="code"/>
+                </NavigationProperty>
+                <Property Name="currency_code" Type="Edm.String" MaxLength="3"/>
+                <Property Name="amount" Type="Edm.Decimal" Scale="2" Precision="15"/>
+                <Property Name="status" Type="Edm.String" MaxLength="1"/>
+                <Property Name="IsActiveEntity" Type="Edm.Boolean" Nullable="false" DefaultValue="true"/>
+                <Property Name="HasActiveEntity" Type="Edm.Boolean" Nullable="false" DefaultValue="false"/>
+                <Property Name="HasDraftEntity" Type="Edm.Boolean" Nullable="false" DefaultValue="false"/>
+                <NavigationProperty Name="DraftAdministrativeData" Type="main.DraftAdministrativeData" ContainsTarget="true"/>
+                <NavigationProperty Name="SiblingEntity" Type="main.purchaseOrder"/>
+            </EntityType>
+            <EntityType Name="status">
+                <Property Name="code" Type="Edm.String" MaxLength="1"/>
+                <Property Name="description" Type="Edm.String"/>
+            </EntityType>
+            <EntityType Name="Currencies">
+                <Key>
+                    <PropertyRef Name="code"/>
+                </Key>
+                <Property Name="name" Type="Edm.String" MaxLength="255"/>
+                <Property Name="descr" Type="Edm.String" MaxLength="1000"/>
+                <Property Name="code" Type="Edm.String" MaxLength="3" Nullable="false"/>
+                <Property Name="symbol" Type="Edm.String" MaxLength="5"/>
+                <NavigationProperty Name="texts" Type="Collection(main.Currencies_texts)">
+                    <OnDelete Action="Cascade"/>
+                </NavigationProperty>
+                <NavigationProperty Name="localized" Type="main.Currencies_texts">
+                    <ReferentialConstraint Property="code" ReferencedProperty="code"/>
+                </NavigationProperty>
+            </EntityType>
+            <EntityType Name="DraftAdministrativeData">
+                <Key>
+                    <PropertyRef Name="DraftUUID"/>
+                </Key>
+                <Property Name="DraftUUID" Type="Edm.Guid" Nullable="false"/>
+                <Property Name="CreationDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+                <Property Name="CreatedByUser" Type="Edm.String" MaxLength="256"/>
+                <Property Name="DraftIsCreatedByMe" Type="Edm.Boolean"/>
+                <Property Name="LastChangeDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+                <Property Name="LastChangedByUser" Type="Edm.String" MaxLength="256"/>
+                <Property Name="InProcessByUser" Type="Edm.String" MaxLength="256"/>
+                <Property Name="DraftIsProcessedByMe" Type="Edm.Boolean"/>
+            </EntityType>
+            <EntityType Name="Currencies_texts">
+                <Key>
+                    <PropertyRef Name="locale"/>
+                    <PropertyRef Name="code"/>
+                </Key>
+                <Property Name="locale" Type="Edm.String" MaxLength="14" Nullable="false"/>
+                <Property Name="name" Type="Edm.String" MaxLength="255"/>
+                <Property Name="descr" Type="Edm.String" MaxLength="1000"/>
+                <Property Name="code" Type="Edm.String" MaxLength="3" Nullable="false"/>
+            </EntityType>
+            <Action Name="releaseOrder" IsBound="true">
+                <Parameter Name="in" Type="main.purchaseOrder"/>
+            </Action>
+            <Action Name="draftPrepare" IsBound="true" EntitySetPath="in">
+                <Parameter Name="in" Type="main.purchaseOrder"/>
+                <Parameter Name="SideEffectsQualifier" Type="Edm.String"/>
+                <ReturnType Type="main.purchaseOrder"/>
+            </Action>
+            <Action Name="draftActivate" IsBound="true" EntitySetPath="in">
+                <Parameter Name="in" Type="main.purchaseOrder"/>
+                <ReturnType Type="main.purchaseOrder"/>
+            </Action>
+            <Action Name="draftEdit" IsBound="true" EntitySetPath="in">
+                <Parameter Name="in" Type="main.purchaseOrder"/>
+                <Parameter Name="PreserveChanges" Type="Edm.Boolean"/>
+                <ReturnType Type="main.purchaseOrder"/>
+            </Action>
+            <Action Name="updateApprovalStatus" IsBound="false">
+                <Parameter Name="orderID" Type="Edm.Guid"/>
+                <Parameter Name="decision" Type="Edm.String"/>
+            </Action>
+            <Annotations Target="main.purchaseOrder">
+                <Annotation Term="UI.HeaderInfo">
+                    <Record Type="UI.HeaderInfoType">
+                        <PropertyValue Property="TypeName" String="{i18n>PurchaseDocument}"/>
+                            <PropertyValue Property="TypeNamePlural" String="{i18n>PurchaseDocuments}"/>
+                                <PropertyValue Property="Title">
+                                    <Record Type="UI.DataField">
+                                        <PropertyValue Property="Value" String="{i18n>PurchaseDocument}"/>
+                                        </Record>
+                                    </PropertyValue>
+                                    <PropertyValue Property="Description">
+                                        <Record Type="UI.DataField">
+                                            <PropertyValue Property="Value" Path="poDocumentNumber"/>
+                                        </Record>
+                                    </PropertyValue>
+                                </Record>
+                            </Annotation>
+                            <Annotation Term="UI.SelectionFields">
+                                <Collection>
+                                    <PropertyPath>poDocumentNumber</PropertyPath>
+                                    <PropertyPath>supplier</PropertyPath>
+                                    <PropertyPath>status</PropertyPath>
+                                </Collection>
+                            </Annotation>
+                            <Annotation Term="UI.Facets">
+                                <Collection>
+                                    <Record Type="UI.ReferenceFacet">
+                                        <PropertyValue Property="Label" String="{i18n>Details}"/>
+                                            <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#Details"/>
+                                        </Record>
+                                        <Record Type="UI.ReferenceFacet">
+                                            <PropertyValue Property="Label" String="{i18n>Admin}"/>
+                                                <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#Admin"/>
+                                            </Record>
+                                        </Collection>
+                                    </Annotation>
+                                    <Annotation Term="UI.FieldGroup" Qualifier="Details">
+                                        <Record Type="UI.FieldGroupType">
+                                            <PropertyValue Property="Data">
+                                                <Collection>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="poDocumentNumber"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="supplier"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="requestedDeliveryDate"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="currency_code"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="amount"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="status"/>
+                                                    </Record>
+                                                </Collection>
+                                            </PropertyValue>
+                                        </Record>
+                                    </Annotation>
+                                    <Annotation Term="UI.FieldGroup" Qualifier="Admin">
+                                        <Record Type="UI.FieldGroupType">
+                                            <PropertyValue Property="Data">
+                                                <Collection>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="ID"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="createdBy"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="createdAt"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="modifiedBy"/>
+                                                    </Record>
+                                                    <Record Type="UI.DataField">
+                                                        <PropertyValue Property="Value" Path="modifiedAt"/>
+                                                    </Record>
+                                                </Collection>
+                                            </PropertyValue>
+                                        </Record>
+                                    </Annotation>
+                                    <Annotation Term="UI.LineItem">
+                                        <Collection>
+                                            <Record Type="UI.DataFieldForAction">
+                                                <PropertyValue Property="Action" String="main.releaseOrder"/>
+                                                <PropertyValue Property="Label" String="Release Order"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="poDocumentNumber"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="supplier"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="requestedDeliveryDate"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="currency_code"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="amount"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="status"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="createdBy"/>
+                                            </Record>
+                                            <Record Type="UI.DataField">
+                                                <PropertyValue Property="Value" Path="createdAt"/>
+                                            </Record>
+                                        </Collection>
+                                    </Annotation>
+                                </Annotations>
+                                <Annotations Target="main.EntityContainer/purchaseOrder">
+                                    <Annotation Term="Common.DraftRoot">
+                                        <Record Type="Common.DraftRootType">
+                                            <PropertyValue Property="ActivationAction" String="main.draftActivate"/>
+                                            <PropertyValue Property="EditAction" String="main.draftEdit"/>
+                                            <PropertyValue Property="PreparationAction" String="main.draftPrepare"/>
+                                        </Record>
+                                    </Annotation>
+                                    <Annotation Term="Capabilities.InsertRestrictions">
+                                        <Record Type="Capabilities.InsertRestrictionsType">
+                                            <PropertyValue Property="Insertable" Bool="true"/>
+                                        </Record>
+                                    </Annotation>
+                                </Annotations>
+                                <Annotations Target="main.purchaseOrder/ID">
+                                    <Annotation Term="Common.Label" String="{i18n>ID}"/>
+                                        <Annotation Term="Core.Computed" Bool="true"/>
+                                    </Annotations>
+                                    <Annotations Target="main.purchaseOrder/createdAt">
+                                        <Annotation Term="UI.HiddenFilter" Bool="true"/>
+                                        <Annotation Term="Core.Immutable" Bool="true"/>
+                                        <Annotation Term="Core.Computed" Bool="true"/>
+                                        <Annotation Term="Common.Label" String="{i18n>CreatedAt}"/>
+                                        </Annotations>
+                                        <Annotations Target="main.purchaseOrder/createdBy">
+                                            <Annotation Term="UI.HiddenFilter" Bool="true"/>
+                                            <Annotation Term="Core.Immutable" Bool="true"/>
+                                            <Annotation Term="Core.Computed" Bool="true"/>
+                                            <Annotation Term="Core.Description" String="{i18n>UserID.Description}"/>
+                                                <Annotation Term="Common.Label" String="{i18n>CreatedBy}"/>
+                                                </Annotations>
+                                                <Annotations Target="main.purchaseOrder/modifiedAt">
+                                                    <Annotation Term="UI.HiddenFilter" Bool="true"/>
+                                                    <Annotation Term="Core.Computed" Bool="true"/>
+                                                    <Annotation Term="Common.Label" String="{i18n>ModifiedAt}"/>
+                                                    </Annotations>
+                                                    <Annotations Target="main.purchaseOrder/modifiedBy">
+                                                        <Annotation Term="UI.HiddenFilter" Bool="true"/>
+                                                        <Annotation Term="Core.Computed" Bool="true"/>
+                                                        <Annotation Term="Core.Description" String="{i18n>UserID.Description}"/>
+                                                            <Annotation Term="Common.Label" String="{i18n>ModifiedBy}"/>
+                                                            </Annotations>
+                                                            <Annotations Target="main.purchaseOrder/poDocumentNumber">
+                                                                <Annotation Term="Common.Label" String="{i18n>poDocumentNumber}"/>
+                                                                    <Annotation Term="Core.Computed" Bool="true"/>
+                                                                </Annotations>
+                                                                <Annotations Target="main.purchaseOrder/supplier">
+                                                                    <Annotation Term="Common.Label" String="{i18n>supplier}"/>
+                                                                    </Annotations>
+                                                                    <Annotations Target="main.purchaseOrder/requestedDeliveryDate">
+                                                                        <Annotation Term="Common.Label" String="{i18n>requestedDeliveryDate}"/>
+                                                                        </Annotations>
+                                                                        <Annotations Target="main.purchaseOrder/currency">
+                                                                            <Annotation Term="Common.Label" String="{i18n>currency}"/>
+                                                                                <Annotation Term="Core.Description" String="{i18n>CurrencyCode.Description}"/>
+                                                                                </Annotations>
+                                                                                <Annotations Target="main.purchaseOrder/currency_code">
+                                                                                    <Annotation Term="Common.Label" String="{i18n>currency}"/>
+                                                                                        <Annotation Term="Common.ValueList">
+                                                                                            <Record Type="Common.ValueListType">
+                                                                                                <PropertyValue Property="Label" String="{i18n>currency}"/>
+                                                                                                    <PropertyValue Property="CollectionPath" String="Currencies"/>
+                                                                                                    <PropertyValue Property="Parameters">
+                                                                                                        <Collection>
+                                                                                                            <Record Type="Common.ValueListParameterInOut">
+                                                                                                                <PropertyValue Property="LocalDataProperty" PropertyPath="currency_code"/>
+                                                                                                                <PropertyValue Property="ValueListProperty" String="code"/>
+                                                                                                            </Record>
+                                                                                                            <Record Type="Common.ValueListParameterDisplayOnly">
+                                                                                                                <PropertyValue Property="ValueListProperty" String="name"/>
+                                                                                                            </Record>
+                                                                                                        </Collection>
+                                                                                                    </PropertyValue>
+                                                                                                </Record>
+                                                                                            </Annotation>
+                                                                                            <Annotation Term="Core.Description" String="{i18n>CurrencyCode.Description}"/>
+                                                                                            </Annotations>
+                                                                                            <Annotations Target="main.purchaseOrder/amount">
+                                                                                                <Annotation Term="Common.Label" String="{i18n>amount}"/>
+                                                                                                </Annotations>
+                                                                                                <Annotations Target="main.purchaseOrder/status">
+                                                                                                    <Annotation Term="Common.ValueListWithFixedValues" Bool="true"/>
+                                                                                                    <Annotation Term="Common.ValueList">
+                                                                                                        <Record Type="Common.ValueListType">
+                                                                                                            <PropertyValue Property="CollectionPath" String="status"/>
+                                                                                                            <PropertyValue Property="Parameters">
+                                                                                                                <Collection>
+                                                                                                                    <Record Type="Common.ValueListParameterInOut">
+                                                                                                                        <PropertyValue Property="LocalDataProperty" PropertyPath="status"/>
+                                                                                                                        <PropertyValue Property="ValueListProperty" String="code"/>
+                                                                                                                    </Record>
+                                                                                                                    <Record Type="Common.ValueListParameterDisplayOnly">
+                                                                                                                        <PropertyValue Property="ValueListProperty" String="supplier"/>
+                                                                                                                    </Record>
+                                                                                                                </Collection>
+                                                                                                            </PropertyValue>
+                                                                                                        </Record>
+                                                                                                    </Annotation>
+                                                                                                    <Annotation Term="Common.Label" String="{i18n>status}"/>
+                                                                                                        <Annotation Term="Core.Computed" Bool="true"/>
+                                                                                                    </Annotations>
+                                                                                                    <Annotations Target="main.purchaseOrder/IsActiveEntity">
+                                                                                                        <Annotation Term="UI.Hidden" Bool="true"/>
+                                                                                                    </Annotations>
+                                                                                                    <Annotations Target="main.purchaseOrder/HasActiveEntity">
+                                                                                                        <Annotation Term="UI.Hidden" Bool="true"/>
+                                                                                                    </Annotations>
+                                                                                                    <Annotations Target="main.purchaseOrder/HasDraftEntity">
+                                                                                                        <Annotation Term="UI.Hidden" Bool="true"/>
+                                                                                                    </Annotations>
+                                                                                                    <Annotations Target="main.purchaseOrder/DraftAdministrativeData">
+                                                                                                        <Annotation Term="UI.Hidden" Bool="true"/>
+                                                                                                    </Annotations>
+                                                                                                    <Annotations Target="main.Currencies">
+                                                                                                        <Annotation Term="UI.Identification">
+                                                                                                            <Collection>
+                                                                                                                <Record Type="UI.DataField">
+                                                                                                                    <PropertyValue Property="Value" Path="name"/>
+                                                                                                                </Record>
+                                                                                                            </Collection>
+                                                                                                        </Annotation>
+                                                                                                    </Annotations>
+                                                                                                    <Annotations Target="main.Currencies/name">
+                                                                                                        <Annotation Term="Common.Label" String="{i18n>Name}"/>
+                                                                                                        </Annotations>
+                                                                                                        <Annotations Target="main.Currencies/descr">
+                                                                                                            <Annotation Term="Common.Label" String="{i18n>Description}"/>
+                                                                                                            </Annotations>
+                                                                                                            <Annotations Target="main.Currencies/code">
+                                                                                                                <Annotation Term="Common.Text" Path="name"/>
+                                                                                                                <Annotation Term="Common.Label" String="{i18n>CurrencyCode}"/>
+                                                                                                                </Annotations>
+                                                                                                                <Annotations Target="main.Currencies/symbol">
+                                                                                                                    <Annotation Term="Common.Label" String="{i18n>CurrencySymbol}"/>
+                                                                                                                    </Annotations>
+                                                                                                                    <Annotations Target="main.DraftAdministrativeData">
+                                                                                                                        <Annotation Term="Common.Label" String="{i18n>Draft_DraftAdministrativeData}"/>
+                                                                                                                        </Annotations>
+                                                                                                                        <Annotations Target="main.DraftAdministrativeData/DraftUUID">
+                                                                                                                            <Annotation Term="UI.Hidden" Bool="true"/>
+                                                                                                                            <Annotation Term="Common.Label" String="{i18n>Draft_DraftUUID}"/>
+                                                                                                                            </Annotations>
+                                                                                                                            <Annotations Target="main.DraftAdministrativeData/CreationDateTime">
+                                                                                                                                <Annotation Term="Common.Label" String="{i18n>Draft_CreationDateTime}"/>
+                                                                                                                                </Annotations>
+                                                                                                                                <Annotations Target="main.DraftAdministrativeData/CreatedByUser">
+                                                                                                                                    <Annotation Term="Common.Label" String="{i18n>Draft_CreatedByUser}"/>
+                                                                                                                                    </Annotations>
+                                                                                                                                    <Annotations Target="main.DraftAdministrativeData/DraftIsCreatedByMe">
+                                                                                                                                        <Annotation Term="UI.Hidden" Bool="true"/>
+                                                                                                                                        <Annotation Term="Common.Label" String="{i18n>Draft_DraftIsCreatedByMe}"/>
+                                                                                                                                        </Annotations>
+                                                                                                                                        <Annotations Target="main.DraftAdministrativeData/LastChangeDateTime">
+                                                                                                                                            <Annotation Term="Common.Label" String="{i18n>Draft_LastChangeDateTime}"/>
+                                                                                                                                            </Annotations>
+                                                                                                                                            <Annotations Target="main.DraftAdministrativeData/LastChangedByUser">
+                                                                                                                                                <Annotation Term="Common.Label" String="{i18n>Draft_LastChangedByUser}"/>
+                                                                                                                                                </Annotations>
+                                                                                                                                                <Annotations Target="main.DraftAdministrativeData/InProcessByUser">
+                                                                                                                                                    <Annotation Term="Common.Label" String="{i18n>Draft_InProcessByUser}"/>
+                                                                                                                                                    </Annotations>
+                                                                                                                                                    <Annotations Target="main.DraftAdministrativeData/DraftIsProcessedByMe">
+                                                                                                                                                        <Annotation Term="UI.Hidden" Bool="true"/>
+                                                                                                                                                        <Annotation Term="Common.Label" String="{i18n>Draft_DraftIsProcessedByMe}"/>
+                                                                                                                                                        </Annotations>
+                                                                                                                                                        <Annotations Target="main.Currencies_texts/locale">
+                                                                                                                                                            <Annotation Term="Common.Label" String="{i18n>LanguageCode}"/>
+                                                                                                                                                            </Annotations>
+                                                                                                                                                            <Annotations Target="main.Currencies_texts/name">
+                                                                                                                                                                <Annotation Term="Common.Label" String="{i18n>Name}"/>
+                                                                                                                                                                </Annotations>
+                                                                                                                                                                <Annotations Target="main.Currencies_texts/descr">
+                                                                                                                                                                    <Annotation Term="Common.Label" String="{i18n>Description}"/>
+                                                                                                                                                                    </Annotations>
+                                                                                                                                                                    <Annotations Target="main.Currencies_texts/code">
+                                                                                                                                                                        <Annotation Term="Common.Text" Path="name"/>
+                                                                                                                                                                        <Annotation Term="Common.Label" String="{i18n>CurrencyCode}"/>
+                                                                                                                                                                        </Annotations>
+                                                                                                                                                                    </Schema>
+                                                                                                                                                                </edmx:DataServices>
+                                                                                                                                                            </edmx:Edmx>

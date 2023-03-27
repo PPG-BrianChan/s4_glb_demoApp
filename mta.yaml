@@ -1,0 +1,135 @@
+_schema-version: "3.1"
+ID: s4_glb_demoApp
+description: A simple CAP project.
+version: 1.0.0
+modules:
+- name: s4_glb_demoApp-srv
+  type: nodejs
+  path: gen/srv
+  requires:
+  - name: s4_glb_demoApp-db
+  - name: s4_glb_demoApp-destination-service
+  - name: uaa_s4_glb_demoApp
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  parameters:
+    buildpack: nodejs_buildpack
+    stack: cflinuxfs4
+  build-parameters:
+    builder: npm-ci
+- name: s4_glb_demoApp-db-deployer
+  type: hdb
+  path: gen/db
+  requires:
+  - name: s4_glb_demoApp-db
+  parameters:
+    buildpack: nodejs_buildpack
+- name: s4_glb_demoApp-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: s4_glb_demoApp-destination-service
+    parameters:
+      content-target: true
+  - name: s4_glb_demoApp_html_repo_host
+    parameters:
+      service-key:
+        name: s4_glb_demoApp_html_repo_host-key
+  - name: uaa_s4_glb_demoApp
+    parameters:
+      service-key:
+        name: uaa_s4_glb_demoApp-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: s4_glb_demoApp_approuter_s4_glb_demoApp_html_repo_host
+          ServiceInstanceName: s4_glb_demoApp-html5-app-host-service
+          ServiceKeyName: s4_glb_demoApp_html_repo_host-key
+          sap.cloud.service: s4_glb_demoApp-approuter
+        - Authentication: OAuth2UserTokenExchange
+          Name: s4_glb_demoApp_approuter_uaa_s4_glb_demoApp
+          ServiceInstanceName: s4_glb_demoApp-xsuaa-service
+          ServiceKeyName: uaa_s4_glb_demoApp-key
+          sap.cloud.service: s4_glb_demoApp-approuter
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: s4_glb_demoApp-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: s4_glb_demoApp_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - s4glbdemoApps4glbdemoappui.zip
+      name: s4glbdemoApps4glbdemoappui
+      target-path: resources/
+- name: s4glbdemoApps4glbdemoappui
+  type: html5
+  path: app/s4_glb_demoapp-ui
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: s4_glb_demoApp-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+- name: s4_glb_demoApp-destination-service
+  requires:
+    - name: srv-api
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          - Authentication: NoAuthentication
+            Name: demoapp-endpoint
+            ProxyType: Internet
+            Type: HTTP
+            URL: ~{srv-api/srv-url}
+            forwardAuthToken: true
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: s4_glb_demoApp-destination-service
+    service-plan: lite
+- name: s4_glb_demoApp_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: s4_glb_demoApp-html5-app-host-service
+    service-plan: app-host
+- name: uaa_s4_glb_demoApp
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: s4_glb_demoApp-xsuaa-service
+    service-plan: application
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npx -p @sap/cds-dk cds build --production
