@@ -13,8 +13,8 @@ annotate main.purchaseOrder with {
     requestedDeliveryDate @title : '{i18n>requestedDeliveryDate}';
     @Common.ValueListWithFixedValues : true
     @Common.ValueList                : {
-        $Type : 'Common.ValueListType',
-        Label : 'Status',
+        $Type          : 'Common.ValueListType',
+        Label          : 'Status',
         CollectionPath : 'status',
         Parameters     : [
             {
@@ -41,6 +41,14 @@ annotate main.purchaseOrder with {
     modifiedBy            @title : '{i18n>ModifiedBy}';
     modifiedAt            @title : '{i18n>ModifiedAt}';
 };
+
+annotate main.status with {
+    @Common : {
+        Text            : description,
+        TextArrangement : #TextOnly
+    }
+    code
+}
 
 annotate main.purchaseOrder with
 @UI : {
